@@ -7,9 +7,14 @@ import {
   TextInput,
 } from "react-native";
 import { useState } from "react";
+import { FlatList } from "react-native-web";
 
 export default function App() {
   const [note, setNote] = useState("");
+  const notes = [
+    { key: 1, noteType: "Husk ugeopgave 1 i MOD" },
+    { key: 2, noteType: "Husk ugeopgave 2 i MOD" },
+  ];
   function buttonHandler() {
     alert("Din note " + note + " er gemt");
   }
@@ -26,6 +31,10 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
+      <FlatList
+        data={notes}
+        renderItem={(listNotes) => <Text>• {listNotes.item.noteType}</Text>}
+      />
       <StatusBar style="auto" />
     </View>
   );
