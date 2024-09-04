@@ -18,7 +18,7 @@ export default function App() {
   ];
   function buttonHandler() {
     alert("Din note: " + note + " ,er gemt");
-    setNoteText([...noteText, { key: noteText.length, noteType: note }]);
+    setNoteText([...notes, { key: notes.length, noteType: note }]);
   }
 
   return (
