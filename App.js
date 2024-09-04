@@ -11,12 +11,14 @@ import { FlatList } from "react-native-web";
 
 export default function App() {
   const [note, setNote] = useState("");
+  const [noteText, setNoteText] = useState([]);
   const notes = [
     { key: 1, noteType: "Husk ugeopgave 1 i MOD" },
     { key: 2, noteType: "Husk ugeopgave 2 i MOD" },
   ];
   function buttonHandler() {
-    alert("Din note " + note + " er gemt");
+    alert("Din note: " + note + " ,er gemt");
+    setNoteText([...noteText, { key: noteText.length, noteType: note }]);
   }
 
   return (
