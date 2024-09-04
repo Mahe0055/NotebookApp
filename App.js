@@ -66,12 +66,13 @@ const styles = StyleSheet.create({
     justifyContent: "column",
   },
   containerList: {
+    flex: 1,
     backgroundColor: "#fcefbb",
     alignItems: "center",
-    height: 400,
-    width: 500,
+    width: "50%",
     borderColor: "black",
     borderWidth: 2,
+    marginBottom: 70, //distance from bottom
   },
   noteText: {
     fontSize: 30,
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, // Tykkelse af kanten
     marginBottom: 20,
     paddingHorizontal: 10,
-    width: "30%",
+    width: "40%",
     borderRadius: 5, // Afrunding af hjørner
     backgroundColor: "#f5f5f5", // grå baggrundsfarve
     fontSize: 15,
