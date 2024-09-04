@@ -19,6 +19,7 @@ export default function App() {
   ]);
 
   function buttonHandler() {
+
     //For hver ny note, vil den altid komme øverst efter den senest note
     setNoteText([{ key: noteText.length + 1, noteType: note }, ...noteText]);
     setNote(""); //Input felt bliver tomt
@@ -26,7 +27,8 @@ export default function App() {
     //Besked vises først efter listen er opdateret
     setTimeout(() => {
       alert("Din note: " + note + " ,er gemt");
-    }, 100); // Forsinkelse på 100ms
+    }, 100); 
+
   }
 
   return (
