@@ -19,7 +19,6 @@ export default function App() {
   ]);
 
   function buttonHandler() {
-
     //For hver ny note, vil den altid komme øverst efter den senest note
     setNoteText([{ key: noteText.length + 1, noteType: note }, ...noteText]);
     setNote(""); //Input felt bliver tomt
@@ -27,8 +26,7 @@ export default function App() {
     //Besked vises først efter listen er opdateret
     setTimeout(() => {
       alert("Din note: " + note + " ,er gemt");
-    }, 100); 
-
+    }, 100);
   }
 
   return (
@@ -72,8 +70,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     height: 400,
     width: 500,
-    borderColor: "black", // Sort kant
-    borderWidth: 2, // Tykkelse af kanten
+    borderColor: "black",
+    borderWidth: 2,
   },
   noteText: {
     fontSize: 30,
