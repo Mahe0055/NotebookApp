@@ -49,7 +49,12 @@ export default function App() {
         <FlatList
           data={noteText}
           renderItem={(listNotes) => (
-            <Text style={styles.noteItem}>• {listNotes.item.noteType}</Text> //Listen af noter som er string i et array
+            <Text style={styles.noteItem}>
+              •{" "}
+              {listNotes.item.noteType.length > 25 //Tjekker om note har mere end 25 bogstaver
+                ? listNotes.item.noteType.substring(0, 25) + "..." //Hvis længden er mere end 25, tilføjes: ...
+                : listNotes.item.noteType}
+            </Text> //Listen af noter som er string i et array
           )}
         />
       </View>
