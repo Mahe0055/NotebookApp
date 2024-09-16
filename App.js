@@ -13,6 +13,18 @@ import { createStackNavigator } from "@react-navigation/stack";
 
 const Stack = createStackNavigator();
 
+// Main App component with navigation setup
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="NoteDetail" component={NoteDetailScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
 // Hjemmeskærmen med en liste af noter
 function HomeScreen({ navigation, route }) {
   const [note, setNote] = useState("");
@@ -107,18 +119,6 @@ function NoteDetailScreen({ route, navigation }) {
         {/* Knappen til at gemme ændringer */}
       </TouchableOpacity>
     </View>
-  );
-}
-
-// Main App component with navigation setup
-export default function App() {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="NoteDetail" component={NoteDetailScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
   );
 }
 
