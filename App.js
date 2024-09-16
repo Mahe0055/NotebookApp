@@ -1,8 +1,15 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View, TouchableOpacity, TextInput, FlatList } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  TextInput,
+  FlatList,
+} from "react-native";
 import { useState, useEffect } from "react";
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
 
 const Stack = createStackNavigator();
 
@@ -19,7 +26,9 @@ function HomeScreen({ navigation, route }) {
     if (route.params?.updatedNote && route.params?.key) {
       setNoteText((prevNotes) =>
         prevNotes.map((item) =>
-          item.key === route.params.key ? { ...item, noteType: route.params.updatedNote } : item
+          item.key === route.params.key
+            ? { ...item, noteType: route.params.updatedNote }
+            : item
         )
       );
     }
@@ -35,7 +44,9 @@ function HomeScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.noteText}>Velkommen! Her kan du skrive og gemme dine noter</Text>
+      <Text style={styles.noteText}>
+        Velkommen! Her kan du skrive og gemme dine noter
+      </Text>
       <TextInput
         style={styles.input}
         onChangeText={(txt) => setNote(txt)}
@@ -43,7 +54,8 @@ function HomeScreen({ navigation, route }) {
       />
       <View>
         <TouchableOpacity style={styles.button} onPress={buttonHandler}>
-          <Text style={styles.buttonText}>Gem note</Text> {/* Knap til at gemme ny note */}
+          <Text style={styles.buttonText}>Gem note</Text>{" "}
+          {/* Knap til at gemme ny note */}
         </TouchableOpacity>
       </View>
 
@@ -53,7 +65,10 @@ function HomeScreen({ navigation, route }) {
           renderItem={(listNotes) => (
             <TouchableOpacity
               onPress={() =>
-                navigation.navigate('NoteDetail', { note: listNotes.item.noteType, key: listNotes.item.key })
+                navigation.navigate("NoteDetail", {
+                  note: listNotes.item.noteType,
+                  key: listNotes.item.key,
+                })
               }
             >
               <Text style={styles.noteItem}>• {listNotes.item.noteType}</Text>
@@ -74,7 +89,7 @@ function NoteDetailScreen({ route, navigation }) {
   // Handler for at gemme ændringer og gå tilbage til HomeScreen
   const saveNoteHandler = () => {
     // Naviger tilbage til HomeScreen og send opdateret note som parametre
-    navigation.navigate('Home', { updatedNote: editableNote, key: key });
+    navigation.navigate("Home", { updatedNote: editableNote, key: key });
   };
 
   return (
@@ -88,7 +103,8 @@ function NoteDetailScreen({ route, navigation }) {
       />
       {/* Tilføjer en gem knap */}
       <TouchableOpacity style={styles.button} onPress={saveNoteHandler}>
-        <Text style={styles.buttonText}>Gem ændringer</Text> {/* Knappen til at gemme ændringer */}
+        <Text style={styles.buttonText}>Gem ændringer</Text>{" "}
+        {/* Knappen til at gemme ændringer */}
       </TouchableOpacity>
     </View>
   );
@@ -129,12 +145,12 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   input: {
-    height: 100, // Højden på tekstinputfeltet
+    height: 70, // Højden på tekstinputfeltet
     borderColor: "black", // Sort kant
     borderWidth: 1, // Tykkelsen af kanten
     marginBottom: 20,
     paddingHorizontal: 10,
-    width: "80%", // Giver bredde på tekstinput
+    width: "75%", // Giver bredde på tekstinput
     borderRadius: 5, // Afrunding af hjørner
     backgroundColor: "#f5f5f5", // Lys baggrundsfarve
     fontSize: 15,
