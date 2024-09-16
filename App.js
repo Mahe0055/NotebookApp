@@ -1,29 +1,33 @@
 import { StatusBar } from "expo-status-bar";
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  TextInput,
-  FlatList,
-} from "react-native";
-import { useState } from "react";
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, FlatList } from "react-native";
+import { useState, useEffect } from "react";
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 
-export default function App() {
-  //Hver note skal returneres som en string (tekst)
+const Stack = createStackNavigator();
+
+// Hjemmeskærmen med en liste af noter
+function HomeScreen({ navigation, route }) {
   const [note, setNote] = useState("");
-  //Laver 2 noter som allerede vil eksistere i notelisten
   const [noteText, setNoteText] = useState([
     { key: 1, noteType: "Husk ugeopgave 1 i MOD" },
     { key: 2, noteType: "Husk ugeopgave 2 i MOD" },
   ]);
 
+  // Brug useEffect til at opdatere listen, når vi vender tilbage fra NoteDetailScreen
+  useEffect(() => {
+    if (route.params?.updatedNote && route.params?.key) {
+      setNoteText((prevNotes) =>
+        prevNotes.map((item) =>
+          item.key === route.params.key ? { ...item, noteType: route.params.updatedNote } : item
+        )
+      );
+    }
+  }, [route.params?.updatedNote]); // Lytter efter ændringer i parametrene
+
   function buttonHandler() {
-    //For hver ny note, vil den altid komme øverst efter den senest note
     setNoteText([{ key: noteText.length + 1, noteType: note }, ...noteText]);
-    setNote(""); //Input felt bliver tomt
-    // Viser en alert-besked efter en forsinkelse på 100 millisekunder
-    //Besked vises først efter listen er opdateret
+    setNote("");
     setTimeout(() => {
       alert("Din note: " + note + " ,er gemt");
     }, 100);
@@ -31,9 +35,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.noteText}>
-        Velkommen! Her kan du skrive og gemme dine noter
-      </Text>
+      <Text style={styles.noteText}>Velkommen! Her kan du skrive og gemme dine noter</Text>
       <TextInput
         style={styles.input}
         onChangeText={(txt) => setNote(txt)}
@@ -41,7 +43,7 @@ export default function App() {
       />
       <View>
         <TouchableOpacity style={styles.button} onPress={buttonHandler}>
-          <Text style={styles.buttonText}>Gem note</Text>
+          <Text style={styles.buttonText}>Gem note</Text> {/* Knap til at gemme ny note */}
         </TouchableOpacity>
       </View>
 
@@ -49,12 +51,13 @@ export default function App() {
         <FlatList
           data={noteText}
           renderItem={(listNotes) => (
-            <Text style={styles.noteItem}>
-              •{" "}
-              {listNotes.item.noteType.length > 25 //Tjekker om note har mere end 25 bogstaver
-                ? listNotes.item.noteType.substring(0, 25) + "..." //Hvis længden er mere end 25, tilføjes: ...
-                : listNotes.item.noteType}
-            </Text> //Listen af noter som er string i et array
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('NoteDetail', { note: listNotes.item.noteType, key: listNotes.item.key })
+              }
+            >
+              <Text style={styles.noteItem}>• {listNotes.item.noteType}</Text>
+            </TouchableOpacity>
           )}
         />
       </View>
@@ -63,12 +66,52 @@ export default function App() {
   );
 }
 
+// Detaljeskærm for at vise/redigere hele noten
+function NoteDetailScreen({ route, navigation }) {
+  const { note, key } = route.params; // Henter noten og nøgle fra navigationen
+  const [editableNote, setEditableNote] = useState(note); // State til redigérbar tekst
+
+  // Handler for at gemme ændringer og gå tilbage til HomeScreen
+  const saveNoteHandler = () => {
+    // Naviger tilbage til HomeScreen og send opdateret note som parametre
+    navigation.navigate('Home', { updatedNote: editableNote, key: key });
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.noteText}>Detaljer for noten:</Text>
+      <TextInput
+        style={styles.input}
+        multiline={true} // Tillader flere linjer
+        value={editableNote} // Viser den redigerbare note
+        onChangeText={setEditableNote} // Opdaterer tekst state
+      />
+      {/* Tilføjer en gem knap */}
+      <TouchableOpacity style={styles.button} onPress={saveNoteHandler}>
+        <Text style={styles.buttonText}>Gem ændringer</Text> {/* Knappen til at gemme ændringer */}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// Main App component with navigation setup
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="NoteDetail" component={NoteDetailScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
     alignItems: "center",
-    justifyContent: "column",
+    justifyContent: "center",
   },
   containerList: {
     flex: 1,
@@ -77,7 +120,7 @@ const styles = StyleSheet.create({
     width: "50%",
     borderColor: "black",
     borderWidth: 2,
-    marginBottom: 70, //distance from bottom
+    marginBottom: 70,
   },
   noteText: {
     fontSize: 30,
@@ -85,30 +128,31 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 50,
   },
-  button: {
-    alignItems: "center",
-    backgroundColor: "#ffbe30", //yellow
-    padding: 15,
-    borderRadius: 5,
-    marginBottom: 40, //distance from bottom
-  },
-  buttonText: {
-    color: "#000000", //black
-    fontWeight: "bold",
-  },
   input: {
-    height: 40,
+    height: 100, // Højden på tekstinputfeltet
     borderColor: "black", // Sort kant
-    borderWidth: 1, // Tykkelse af kanten
+    borderWidth: 1, // Tykkelsen af kanten
     marginBottom: 20,
     paddingHorizontal: 10,
-    width: "40%",
+    width: "80%", // Giver bredde på tekstinput
     borderRadius: 5, // Afrunding af hjørner
-    backgroundColor: "#f5f5f5", // grå baggrundsfarve
+    backgroundColor: "#f5f5f5", // Lys baggrundsfarve
     fontSize: 15,
   },
   noteItem: {
-    fontSize: 18, // Større tekststørrelse for noterne
-    padding: 10, // Giver lidt ekstra plads omkring hver note
+    fontSize: 18,
+    padding: 10,
+  },
+  button: {
+    alignItems: "center",
+    backgroundColor: "#ffbe30", // Gul baggrundsfarve
+    padding: 15,
+    borderRadius: 5,
+    marginBottom: 40, // Afstand fra bunden
+    marginTop: 20, // Ekstra margin for at separere knappen fra inputfeltet
+  },
+  buttonText: {
+    color: "#000000", // Sort tekst
+    fontWeight: "bold",
   },
 });
