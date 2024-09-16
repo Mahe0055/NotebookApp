@@ -66,7 +66,7 @@ function HomeScreen({ navigation, route }) {
       />
       <View>
         <TouchableOpacity style={styles.button} onPress={buttonHandler}>
-          <Text style={styles.buttonText}>Gem note</Text>{" "}
+          <Text style={styles.buttonText}>Gem note</Text>
           {/* Knap til at gemme ny note */}
         </TouchableOpacity>
       </View>
@@ -115,7 +115,7 @@ function NoteDetailScreen({ route, navigation }) {
       />
       {/* Tilføjer en gem knap */}
       <TouchableOpacity style={styles.button} onPress={saveNoteHandler}>
-        <Text style={styles.buttonText}>Gem ændringer</Text>{" "}
+        <Text style={styles.buttonText}>Gem ændringer</Text>
         {/* Knappen til at gemme ændringer */}
       </TouchableOpacity>
     </View>
