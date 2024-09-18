@@ -1,6 +1,12 @@
 import { StatusBar } from "expo-status-bar";
-import { app, database } from './firebase'
-import { collection, addDoc, doc, deleteDoc } from "firebase/firestore";
+import { app, database } from "./firebase";
+import {
+  collection,
+  addDoc,
+  doc,
+  deleteDoc,
+  updateDoc,
+} from "firebase/firestore";
 import {
   StyleSheet,
   Text,
@@ -12,8 +18,8 @@ import {
 import { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { AntDesign } from '@expo/vector-icons'; // Make sure to install @expo/vector-icons
+import { useCollection } from "react-firebase-hooks/firestore";
+import { AntDesign } from "@expo/vector-icons"; // Make sure to install @expo/vector-icons
 
 const Stack = createStackNavigator();
 
@@ -29,20 +35,23 @@ export default function App() {
 }
 
 function HomeScreen({ navigation }) {
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(""); // For new notes
+  const [editObj, setEditObj] = useState(null); // For editing existing notes
   const [values, loading, error] = useCollection(collection(database, "notes"));
-  const noteText = values?.docs.map((doc) => ({id: doc.id, noteType: doc.data().text})) || [];
+  const noteText =
+    values?.docs.map((doc) => ({ id: doc.id, noteType: doc.data().text })) ||
+    [];
 
   async function buttonHandler() {
     try {
       await addDoc(collection(database, "notes"), {
-        text: note
+        text: note,
       });
       setNote("");
       setTimeout(() => {
         alert("Din note: " + note + " ,er gemt");
       }, 100);
-    } catch(err) {
+    } catch (err) {
       console.log("fejl i DB:", err);
     }
   }
@@ -55,11 +64,31 @@ function HomeScreen({ navigation }) {
     }
   }
 
+  function updateDocument(item) {
+    setEditObj(item);
+    setNote(item.noteType);
+  }
+
+  async function saveUpdate() {
+    await updateDoc(doc(database, "notes", editObj.id), {
+      text: note,
+    });
+    setNote("");
+    setEditObj(null);
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.noteText}>
         Velkommen! Her kan du skrive og gemme dine noter
       </Text>
+      {editObj && (
+        <View>
+          <TextInput value={note} onChangeText={setNote} style={styles.input} />
+          <Text onPress={saveUpdate}>Gem opdateret note</Text>
+        </View>
+      )}
+
       <TextInput
         style={styles.input}
         onChangeText={(txt) => setNote(txt)}
@@ -72,7 +101,7 @@ function HomeScreen({ navigation }) {
       <View style={styles.containerList}>
         <FlatList
           data={noteText}
-          renderItem={({item}) => (
+          renderItem={({ item }) => (
             <View style={styles.noteContainer}>
               <TouchableOpacity
                 style={styles.noteTextContainer}
@@ -81,15 +110,21 @@ function HomeScreen({ navigation }) {
                     note: item.noteType,
                     id: item.id,
                   })
-                } 
+                }
               >
-                <Text style={styles.noteItem}>• {item.noteType}</Text>              
+                <Text style={styles.noteItem}>• {item.noteType}</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => deleteDocument(item.id)}
                 style={styles.deleteButton}
               >
                 <AntDesign name="delete" size={24} color="#FF6347" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => updateDocument(item)}
+                style={styles.updateButton}
+              >
+                <AntDesign name="edit" size={24} color="#47e000" />
               </TouchableOpacity>
             </View>
           )}
@@ -108,7 +143,7 @@ function NoteDetailScreen({ route, navigation }) {
   const saveNoteHandler = async () => {
     try {
       await updateDoc(doc(database, "notes", id), {
-        text: editableNote
+        text: editableNote,
       });
       navigation.navigate("Home");
     } catch (err) {
@@ -167,12 +202,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   noteContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 5,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   noteTextContainer: {
     flex: 1,
