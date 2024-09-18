@@ -19,7 +19,7 @@ import { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useCollection } from "react-firebase-hooks/firestore";
-import { AntDesign } from "@expo/vector-icons"; // Make sure to install @expo/vector-icons
+import { AntDesign } from "@expo/vector-icons";
 
 const Stack = createStackNavigator();
 
@@ -43,6 +43,7 @@ function HomeScreen({ navigation }) {
     [];
 
   async function buttonHandler() {
+    if (note.trim() === "") return; // Prevent empty notes
     try {
       await addDoc(collection(database, "notes"), {
         text: note,
@@ -70,11 +71,16 @@ function HomeScreen({ navigation }) {
   }
 
   async function saveUpdate() {
-    await updateDoc(doc(database, "notes", editObj.id), {
-      text: note,
-    });
-    setNote("");
-    setEditObj(null);
+    if (note.trim() === "") return; // Prevent empty notes
+    try {
+      await updateDoc(doc(database, "notes", editObj.id), {
+        text: note,
+      });
+      setNote("");
+      setEditObj(null);
+    } catch (err) {
+      console.log("Fejl ved opdatering:", err);
+    }
   }
 
   return (
@@ -82,21 +88,22 @@ function HomeScreen({ navigation }) {
       <Text style={styles.noteText}>
         Velkommen! Her kan du skrive og gemme dine noter
       </Text>
-      {editObj && (
-        <View>
-          <TextInput value={note} onChangeText={setNote} style={styles.input} />
-          <Text onPress={saveUpdate}>Gem opdateret note</Text>
-        </View>
-      )}
-
-      <TextInput
-        style={styles.input}
-        onChangeText={(txt) => setNote(txt)}
-        value={note}
-      />
-      <TouchableOpacity style={styles.button} onPress={buttonHandler}>
-        <Text style={styles.buttonText}>Gem note</Text>
-      </TouchableOpacity>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          onChangeText={setNote}
+          value={note}
+          placeholder={editObj ? "Rediger note" : "Skriv en ny note"}
+        />
+        <TouchableOpacity
+          style={[styles.button, editObj && styles.updateButton]}
+          onPress={editObj ? saveUpdate : buttonHandler}
+        >
+          <Text style={styles.buttonText}>
+            {editObj ? "Opdater" : "Gem note"}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.containerList}>
         <FlatList
@@ -116,13 +123,13 @@ function HomeScreen({ navigation }) {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => deleteDocument(item.id)}
-                style={styles.deleteButton}
+                style={styles.iconButton}
               >
                 <AntDesign name="delete" size={24} color="#FF6347" />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => updateDocument(item)}
-                style={styles.updateButton}
+                style={styles.iconButton}
               >
                 <AntDesign name="edit" size={24} color="#47e000" />
               </TouchableOpacity>
@@ -141,6 +148,7 @@ function NoteDetailScreen({ route, navigation }) {
   const [editableNote, setEditableNote] = useState(note);
 
   const saveNoteHandler = async () => {
+    if (editableNote.trim() === "") return; // Prevent empty notes
     try {
       await updateDoc(doc(database, "notes", id), {
         text: editableNote,
@@ -173,11 +181,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
+    padding: 10,  
+    width: "100%",  
+    alignSelf: "center",
   },
   containerList: {
     flex: 1,
     backgroundColor: "#fcefbb",
-    width: "90%",
+    width: "100%",
     borderColor: "black",
     borderWidth: 2,
     marginBottom: 70,
@@ -185,27 +196,33 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   noteText: {
-    fontSize: 30,
-    padding: 20,
+    fontSize: 24,
     fontWeight: "bold",
-    marginTop: 50,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    width: "100%",
   },
   input: {
-    height: 70,
+    flex: 1,
+    height: 50,
     borderColor: "black",
     borderWidth: 1,
-    marginBottom: 20,
+    marginRight: 10,
     paddingHorizontal: 10,
-    width: "75%",
     borderRadius: 5,
     backgroundColor: "#f5f5f5",
-    fontSize: 15,
+    fontSize: 16,
   },
   noteContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 5,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
   },
@@ -213,22 +230,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   noteItem: {
-    fontSize: 18,
-    padding: 10,
+    fontSize: 16,
   },
   button: {
     alignItems: "center",
     backgroundColor: "#ffbe30",
     padding: 15,
     borderRadius: 5,
-    marginBottom: 40,
-    marginTop: 20,
+  },
+  updateButton: {
+    backgroundColor: "#47e000",
   },
   buttonText: {
     color: "#000000",
     fontWeight: "bold",
+    fontSize: 16,
   },
-  deleteButton: {
-    padding: 10,
+  iconButton: {
+    padding: 5,
+    marginLeft: 10,
   },
 });
