@@ -1,4 +1,6 @@
 import { StatusBar } from "expo-status-bar";
+import { app, database } from './firebase'
+import { collection, addDoc, doc, deleteDoc } from "firebase/firestore";
 import {
   StyleSheet,
   Text,
@@ -10,10 +12,10 @@ import {
 import { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
+import { useCollection } from 'react-firebase-hooks/firestore';
 
 const Stack = createStackNavigator();
 
-// Main App component with navigation setup
 export default function App() {
   return (
     <NavigationContainer>
@@ -25,34 +27,33 @@ export default function App() {
   );
 }
 
-// Hjemmeskærmen med en liste af noter
 function HomeScreen({ navigation, route }) {
   const [note, setNote] = useState("");
-  const [noteText, setNoteText] = useState([
-    { key: 1, noteType: "Husk ugeopgave 1 i MOD" },
-    { key: 2, noteType: "Husk ugeopgave 2 i MOD" },
-  ]);
+  const [values, loading, error] = useCollection(collection(database, "notes"));
+  const noteText = values?.docs.map((doc) => ({id: doc.id, noteType: doc.data().text})) || [];
 
-  // Brug useEffect til at opdatere listen, når vi vender tilbage fra NoteDetailScreen
-  useEffect(() => {
-    if (route.params?.updatedNote && route.params?.key) {
-      setNoteText((prevNotes) =>
-        prevNotes.map((item) =>
-          item.key === route.params.key
-            ? { ...item, noteType: route.params.updatedNote }
-            : item
-        )
-      );
+  async function buttonHandler() {
+    try {
+      await addDoc(collection(database, "notes"), {
+        text: note
+      });
+      setNote("");
+      setTimeout(() => {
+        alert("Din note: " + note + " ,er gemt");
+      }, 100);
+    } catch(err) {
+      console.log("fejl i DB:", err);
     }
-  }, [route.params?.updatedNote]); // Lytter efter ændringer i parametrene
-
-  function buttonHandler() {
-    setNoteText([{ key: noteText.length + 1, noteType: note }, ...noteText]);
-    setNote("");
-    setTimeout(() => {
-      alert("Din note: " + note + " ,er gemt");
-    }, 100);
   }
+
+  async function deleteDocument(id) {
+    try {
+      await deleteDoc(doc(database, "notes", id));
+    } catch (err) {
+      console.log("Fejl ved sletning:", err);
+    }
+  }
+
 
   return (
     <View style={styles.container}>
@@ -74,18 +75,24 @@ function HomeScreen({ navigation, route }) {
       <View style={styles.containerList}>
         <FlatList
           data={noteText}
-          renderItem={(listNotes) => (
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("NoteDetail", {
-                  note: listNotes.item.noteType,
-                  key: listNotes.item.key,
-                })
-              }
-            >
-              <Text style={styles.noteItem}>• {listNotes.item.noteType}</Text>
-            </TouchableOpacity>
+          renderItem={({item}) => (
+            <View>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("NoteDetail", {
+                    note: item.noteType,
+                    id: item.id,
+                  })
+                } 
+              >
+                <Text style={styles.noteItem}>• {item.noteType}</Text>              
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => deleteDocument(item.id)}>
+                <Text style={styles.deleteButton}>Delete</Text>
+              </TouchableOpacity>
+            </View>
           )}
+          keyExtractor={(item) => item.id}
         />
       </View>
       <StatusBar style="auto" />
@@ -118,6 +125,8 @@ function NoteDetailScreen({ route, navigation }) {
         <Text style={styles.buttonText}>Gem ændringer</Text>
         {/* Knappen til at gemme ændringer */}
       </TouchableOpacity>
+
+  
     </View>
   );
 }
@@ -137,6 +146,10 @@ const styles = StyleSheet.create({
     borderColor: "black",
     borderWidth: 2,
     marginBottom: 70,
+  },
+  deleteButton: {
+    color: 'red',
+    padding: 5,
   },
   noteText: {
     fontSize: 30,
