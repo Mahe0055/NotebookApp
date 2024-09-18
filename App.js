@@ -9,10 +9,11 @@ import {
   TextInput,
   FlatList,
 } from "react-native";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useCollection } from 'react-firebase-hooks/firestore';
+import { AntDesign } from '@expo/vector-icons'; // Make sure to install @expo/vector-icons
 
 const Stack = createStackNavigator();
 
@@ -27,7 +28,7 @@ export default function App() {
   );
 }
 
-function HomeScreen({ navigation, route }) {
+function HomeScreen({ navigation }) {
   const [note, setNote] = useState("");
   const [values, loading, error] = useCollection(collection(database, "notes"));
   const noteText = values?.docs.map((doc) => ({id: doc.id, noteType: doc.data().text})) || [];
@@ -54,7 +55,6 @@ function HomeScreen({ navigation, route }) {
     }
   }
 
-
   return (
     <View style={styles.container}>
       <Text style={styles.noteText}>
@@ -65,19 +65,17 @@ function HomeScreen({ navigation, route }) {
         onChangeText={(txt) => setNote(txt)}
         value={note}
       />
-      <View>
-        <TouchableOpacity style={styles.button} onPress={buttonHandler}>
-          <Text style={styles.buttonText}>Gem note</Text>
-          {/* Knap til at gemme ny note */}
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.button} onPress={buttonHandler}>
+        <Text style={styles.buttonText}>Gem note</Text>
+      </TouchableOpacity>
 
       <View style={styles.containerList}>
         <FlatList
           data={noteText}
           renderItem={({item}) => (
-            <View>
+            <View style={styles.noteContainer}>
               <TouchableOpacity
+                style={styles.noteTextContainer}
                 onPress={() =>
                   navigation.navigate("NoteDetail", {
                     note: item.noteType,
@@ -87,8 +85,11 @@ function HomeScreen({ navigation, route }) {
               >
                 <Text style={styles.noteItem}>• {item.noteType}</Text>              
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => deleteDocument(item.id)}>
-                <Text style={styles.deleteButton}>Delete</Text>
+              <TouchableOpacity 
+                onPress={() => deleteDocument(item.id)}
+                style={styles.deleteButton}
+              >
+                <AntDesign name="delete" size={24} color="#FF6347" />
               </TouchableOpacity>
             </View>
           )}
@@ -100,15 +101,19 @@ function HomeScreen({ navigation, route }) {
   );
 }
 
-// Detaljeskærm for at vise/redigere hele noten
 function NoteDetailScreen({ route, navigation }) {
-  const { note, key } = route.params; // Henter noten og nøgle fra navigationen
-  const [editableNote, setEditableNote] = useState(note); // State til redigérbar tekst
+  const { note, id } = route.params;
+  const [editableNote, setEditableNote] = useState(note);
 
-  // Handler for at gemme ændringer og gå tilbage til HomeScreen
-  const saveNoteHandler = () => {
-    // Naviger tilbage til HomeScreen og send opdateret note som parametre
-    navigation.navigate("Home", { updatedNote: editableNote, key: key });
+  const saveNoteHandler = async () => {
+    try {
+      await updateDoc(doc(database, "notes", id), {
+        text: editableNote
+      });
+      navigation.navigate("Home");
+    } catch (err) {
+      console.log("Fejl ved opdatering:", err);
+    }
   };
 
   return (
@@ -116,17 +121,13 @@ function NoteDetailScreen({ route, navigation }) {
       <Text style={styles.noteText}>Detaljer for noten:</Text>
       <TextInput
         style={styles.input}
-        multiline={true} // Tillader flere linjer
-        value={editableNote} // Viser den redigerbare note
-        onChangeText={setEditableNote} // Opdaterer tekst state
+        multiline={true}
+        value={editableNote}
+        onChangeText={setEditableNote}
       />
-      {/* Tilføjer en gem knap */}
       <TouchableOpacity style={styles.button} onPress={saveNoteHandler}>
         <Text style={styles.buttonText}>Gem ændringer</Text>
-        {/* Knappen til at gemme ændringer */}
       </TouchableOpacity>
-
-  
     </View>
   );
 }
@@ -141,15 +142,12 @@ const styles = StyleSheet.create({
   containerList: {
     flex: 1,
     backgroundColor: "#fcefbb",
-    alignItems: "center",
-    width: "50%",
+    width: "90%",
     borderColor: "black",
     borderWidth: 2,
     marginBottom: 70,
-  },
-  deleteButton: {
-    color: 'red',
-    padding: 5,
+    borderRadius: 10,
+    padding: 10,
   },
   noteText: {
     fontSize: 30,
@@ -158,15 +156,26 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   input: {
-    height: 70, // Højden på tekstinputfeltet
-    borderColor: "black", // Sort kant
-    borderWidth: 1, // Tykkelsen af kanten
+    height: 70,
+    borderColor: "black",
+    borderWidth: 1,
     marginBottom: 20,
     paddingHorizontal: 10,
-    width: "75%", // Giver bredde på tekstinput
-    borderRadius: 5, // Afrunding af hjørner
-    backgroundColor: "#f5f5f5", // Lys baggrundsfarve
+    width: "75%",
+    borderRadius: 5,
+    backgroundColor: "#f5f5f5",
     fontSize: 15,
+  },
+  noteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  noteTextContainer: {
+    flex: 1,
   },
   noteItem: {
     fontSize: 18,
@@ -174,14 +183,17 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: "center",
-    backgroundColor: "#ffbe30", // Gul baggrundsfarve
+    backgroundColor: "#ffbe30",
     padding: 15,
     borderRadius: 5,
-    marginBottom: 40, // Afstand fra bunden
-    marginTop: 20, // Ekstra margin for at separere knappen fra inputfeltet
+    marginBottom: 40,
+    marginTop: 20,
   },
   buttonText: {
-    color: "#000000", // Sort tekst
+    color: "#000000",
     fontWeight: "bold",
+  },
+  deleteButton: {
+    padding: 10,
   },
 });
