@@ -6,6 +6,7 @@ import {
   doc,
   deleteDoc,
   updateDoc,
+  snapshot,
 } from "firebase/firestore";
 import {
   StyleSheet,
@@ -14,12 +15,17 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
+  Image,
 } from "react-native";
 import { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { AntDesign } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { Button } from "react-native-web";
+import { storage } from "./firebase";
+import { ref, uploadBytes } from "firebase/storage";
 
 const Stack = createStackNavigator();
 
@@ -146,6 +152,7 @@ function HomeScreen({ navigation }) {
 function NoteDetailScreen({ route, navigation }) {
   const { note, id } = route.params;
   const [editableNote, setEditableNote] = useState(note);
+  const [imagePath, setImagePath] = useState(null);
 
   const saveNoteHandler = async () => {
     if (editableNote.trim() === "") return; // Prevent empty notes
@@ -159,6 +166,26 @@ function NoteDetailScreen({ route, navigation }) {
     }
   };
 
+  //funktion til at hente billede fra device
+  async function launchImagePicker() {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+    });
+    if (!result.canceled) {
+      setImagePath(result.assets[0].uri);
+    }
+  }
+
+  //funktion til at uploade billede til Firebase
+  async function uploadImage() {
+    const res = await fetch(imagePath);
+    const blob = await res.blob();
+    const storageRef = ref(storage, "myimage.jpg");
+    uploadBytes(storageRef, blob).then((snapshot) => {
+      alert("Billede er uploadet");
+    });
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.noteText}>Detaljer for noten:</Text>
@@ -171,6 +198,12 @@ function NoteDetailScreen({ route, navigation }) {
       <TouchableOpacity style={styles.button} onPress={saveNoteHandler}>
         <Text style={styles.buttonText}>Gem ændringer</Text>
       </TouchableOpacity>
+
+      <Image style={{ width: 200, height: 200 }} source={{ uri: imagePath }} />
+      {/* Hent billede fra device*/}
+      <Button title="Hent billede" onPress={launchImagePicker} />
+      {/* Upload billede til Firebase*/}
+      <Button title="Upload billede" onPress={uploadImage} />
     </View>
   );
 }
@@ -181,8 +214,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-    padding: 10,  
-    width: "100%",  
+    padding: 10,
+    width: "100%",
     alignSelf: "center",
   },
   containerList: {
