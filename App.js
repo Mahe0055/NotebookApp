@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { app, database, storage } from "./firebase";
 import {
@@ -22,7 +22,12 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { AntDesign } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
 
 const Stack = createStackNavigator();
 
@@ -38,7 +43,7 @@ export default function App() {
 }
 
 function HomeScreen({ navigation }) {
-  const [note, setNote] = useState(""); 
+  const [note, setNote] = useState("");
   const [editObj, setEditObj] = useState(null);
   const [values, loading, error] = useCollection(collection(database, "notes"));
   const noteText =
@@ -181,11 +186,11 @@ function NoteDetailScreen({ route, navigation }) {
 
   async function uploadImage() {
     if (!imagePath) return;
-    
+
     const res = await fetch(imagePath);
     const blob = await res.blob();
     const storageRef = ref(storage, `notes/${id}/image.jpg`);
-    
+
     try {
       await uploadBytes(storageRef, blob);
       alert("Billede er uploadet");
@@ -210,7 +215,7 @@ function NoteDetailScreen({ route, navigation }) {
     const storageRef = ref(storage, `notes/${id}/image.jpg`);
     try {
       await deleteObject(storageRef);
-      setDownloadedImageUrl(null); 
+      setDownloadedImageUrl(null);
       alert("Billede er slettet");
     } catch (error) {
       console.log("Fejl ved sletning af billede:", error);
@@ -233,9 +238,9 @@ function NoteDetailScreen({ route, navigation }) {
 
       {downloadedImageUrl && (
         <>
-          <Image 
-            source={{ uri: downloadedImageUrl }} 
-            style={styles.largeImage} 
+          <Image
+            source={{ uri: downloadedImageUrl }}
+            style={styles.largeImage}
           />
           <TouchableOpacity style={styles.deleteButton} onPress={deleteImage}>
             <Text style={styles.buttonText}>Slet billede</Text>
@@ -243,10 +248,7 @@ function NoteDetailScreen({ route, navigation }) {
         </>
       )}
       {imagePath && !downloadedImageUrl && (
-        <Image 
-          source={{ uri: imagePath }} 
-          style={styles.largeImage} 
-        />
+        <Image source={{ uri: imagePath }} style={styles.largeImage} />
       )}
       <TouchableOpacity style={styles.blueButton} onPress={launchImagePicker}>
         <Text style={styles.buttonText}>Vælg billede</Text>
@@ -326,14 +328,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   updateButton: {
-    backgroundColor: "#4682B4", 
+    backgroundColor: "#4682B4",
   },
   editingInput: {
-    backgroundColor: "#e0f7fa", 
-    borderColor: "#4682B4", 
+    backgroundColor: "#e0f7fa",
+    borderColor: "#4682B4",
   },
   iconMargin: {
-    marginLeft: 20, 
+    marginLeft: 20,
   },
   button: {
     alignItems: "center",
