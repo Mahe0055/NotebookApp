@@ -1,12 +1,12 @@
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from "expo-status-bar";
-import { app, database } from "./firebase";
+import { app, database, storage } from "./firebase";
 import {
   collection,
   addDoc,
   doc,
   deleteDoc,
   updateDoc,
-  snapshot,
 } from "firebase/firestore";
 import {
   StyleSheet,
@@ -17,15 +17,12 @@ import {
   FlatList,
   Image,
 } from "react-native";
-import { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { AntDesign } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { Button } from "react-native-web";
-import { storage } from "./firebase";
-import { ref, uploadBytes } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 const Stack = createStackNavigator();
 
@@ -41,15 +38,15 @@ export default function App() {
 }
 
 function HomeScreen({ navigation }) {
-  const [note, setNote] = useState(""); // For new notes
-  const [editObj, setEditObj] = useState(null); // For editing existing notes
+  const [note, setNote] = useState(""); 
+  const [editObj, setEditObj] = useState(null);
   const [values, loading, error] = useCollection(collection(database, "notes"));
   const noteText =
     values?.docs.map((doc) => ({ id: doc.id, noteType: doc.data().text })) ||
     [];
 
   async function buttonHandler() {
-    if (note.trim() === "") return; // Prevent empty notes
+    if (note.trim() === "") return;
     try {
       await addDoc(collection(database, "notes"), {
         text: note,
@@ -77,7 +74,7 @@ function HomeScreen({ navigation }) {
   }
 
   async function saveUpdate() {
-    if (note.trim() === "") return; // Prevent empty notes
+    if (note.trim() === "") return;
     try {
       await updateDoc(doc(database, "notes", editObj.id), {
         text: note,
@@ -96,7 +93,7 @@ function HomeScreen({ navigation }) {
       </Text>
       <View style={styles.inputContainer}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, editObj && styles.editingInput]}
           onChangeText={setNote}
           value={note}
           placeholder={editObj ? "Rediger note" : "Skriv en ny note"}
@@ -135,7 +132,7 @@ function HomeScreen({ navigation }) {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => updateDocument(item)}
-                style={styles.iconButton}
+                style={[styles.iconButton, styles.iconMargin]}
               >
                 <AntDesign name="edit" size={24} color="#47e000" />
               </TouchableOpacity>
@@ -153,9 +150,14 @@ function NoteDetailScreen({ route, navigation }) {
   const { note, id } = route.params;
   const [editableNote, setEditableNote] = useState(note);
   const [imagePath, setImagePath] = useState(null);
+  const [downloadedImageUrl, setDownloadedImageUrl] = useState(null);
+
+  useEffect(() => {
+    downloadImage();
+  }, []);
 
   const saveNoteHandler = async () => {
-    if (editableNote.trim() === "") return; // Prevent empty notes
+    if (editableNote.trim() === "") return;
     try {
       await updateDoc(doc(database, "notes", id), {
         text: editableNote,
@@ -166,31 +168,61 @@ function NoteDetailScreen({ route, navigation }) {
     }
   };
 
-  //funktion til at hente billede fra device
   async function launchImagePicker() {
     let result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
     });
     if (!result.canceled) {
       setImagePath(result.assets[0].uri);
     }
   }
 
-  //funktion til at uploade billede til Firebase
   async function uploadImage() {
+    if (!imagePath) return;
+    
     const res = await fetch(imagePath);
     const blob = await res.blob();
-    const storageRef = ref(storage, "myimage.jpg");
-    uploadBytes(storageRef, blob).then((snapshot) => {
+    const storageRef = ref(storage, `notes/${id}/image.jpg`);
+    
+    try {
+      await uploadBytes(storageRef, blob);
       alert("Billede er uploadet");
-    });
+      downloadImage();
+    } catch (error) {
+      console.error("Fejl ved upload af billede:", error);
+      alert("Der opstod en fejl under upload af billedet.");
+    }
+  }
+
+  async function downloadImage() {
+    const storageRef = ref(storage, `notes/${id}/image.jpg`);
+    try {
+      const url = await getDownloadURL(storageRef);
+      setDownloadedImageUrl(url);
+    } catch (error) {
+      console.log("Fejl ved download af billede:", error);
+    }
+  }
+
+  async function deleteImage() {
+    const storageRef = ref(storage, `notes/${id}/image.jpg`);
+    try {
+      await deleteObject(storageRef);
+      setDownloadedImageUrl(null); 
+      alert("Billede er slettet");
+    } catch (error) {
+      console.log("Fejl ved sletning af billede:", error);
+      alert("Der opstod en fejl under sletning af billedet.");
+    }
   }
 
   return (
     <View style={styles.container}>
       <Text style={styles.noteText}>Detaljer for noten:</Text>
       <TextInput
-        style={styles.input}
+        style={styles.narrowInput}
         multiline={true}
         value={editableNote}
         onChangeText={setEditableNote}
@@ -199,11 +231,29 @@ function NoteDetailScreen({ route, navigation }) {
         <Text style={styles.buttonText}>Gem ændringer</Text>
       </TouchableOpacity>
 
-      <Image style={{ width: 200, height: 200 }} source={{ uri: imagePath }} />
-      {/* Hent billede fra device*/}
-      <Button title="Hent billede" onPress={launchImagePicker} />
-      {/* Upload billede til Firebase*/}
-      <Button title="Upload billede" onPress={uploadImage} />
+      {downloadedImageUrl && (
+        <>
+          <Image 
+            source={{ uri: downloadedImageUrl }} 
+            style={styles.largeImage} 
+          />
+          <TouchableOpacity style={styles.deleteButton} onPress={deleteImage}>
+            <Text style={styles.buttonText}>Slet billede</Text>
+          </TouchableOpacity>
+        </>
+      )}
+      {imagePath && !downloadedImageUrl && (
+        <Image 
+          source={{ uri: imagePath }} 
+          style={styles.largeImage} 
+        />
+      )}
+      <TouchableOpacity style={styles.blueButton} onPress={launchImagePicker}>
+        <Text style={styles.buttonText}>Vælg billede</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.blueButton} onPress={uploadImage}>
+        <Text style={styles.buttonText}>Upload billede</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -243,9 +293,19 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 50,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    backgroundColor: "#f5f5f5",
+    fontSize: 16,
+  },
+  narrowInput: {
+    width: "90%",
+    height: 100,
     borderColor: "black",
     borderWidth: 1,
-    marginRight: 10,
+    marginBottom: 10,
     paddingHorizontal: 10,
     borderRadius: 5,
     backgroundColor: "#f5f5f5",
@@ -265,22 +325,45 @@ const styles = StyleSheet.create({
   noteItem: {
     fontSize: 16,
   },
+  updateButton: {
+    backgroundColor: "#4682B4", 
+  },
+  editingInput: {
+    backgroundColor: "#e0f7fa", 
+    borderColor: "#4682B4", 
+  },
+  iconMargin: {
+    marginLeft: 20, 
+  },
   button: {
     alignItems: "center",
     backgroundColor: "#ffbe30",
     padding: 15,
     borderRadius: 5,
+    marginVertical: 5,
   },
-  updateButton: {
-    backgroundColor: "#47e000",
+  blueButton: {
+    alignItems: "center",
+    backgroundColor: "#4682B4",
+    padding: 15,
+    borderRadius: 5,
+    marginVertical: 5,
+  },
+  deleteButton: {
+    alignItems: "center",
+    backgroundColor: "#FF6347",
+    padding: 15,
+    borderRadius: 5,
+    marginVertical: 5,
   },
   buttonText: {
-    color: "#000000",
+    color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
   },
-  iconButton: {
-    padding: 5,
-    marginLeft: 10,
+  largeImage: {
+    width: 250,
+    height: 250,
+    marginVertical: 10,
   },
 });
